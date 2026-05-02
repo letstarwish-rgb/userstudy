@@ -85,7 +85,7 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
     <div class="notice" style="margin-top:12px">所有 η 值（8/255、12/255、16/255）的图像混合随机排列，包含任务1和任务2，完成一次即可。</div>
   </div>
 
-  <button class="btn primary full" onclick="startStudy()">开始评测 →</button>
+  <button class="btn primary full" id="start-btn" onclick="startStudy()">开始评测 →</button>
 </div>
 
 <!-- ══ TASK 1 ══════════════════════════════════════════════════ -->
@@ -151,8 +151,6 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
     <p id="done-msg" style="margin-bottom:24px"></p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <button class="btn primary" onclick="showPage('pg-results');renderResults()">查看统计结果</button>
-      <button class="btn" onclick="exportCSV()">导出结果 CSV</button>
-      <button class="btn" onclick="showPage('pg-setup')">返回主页</button>
     </div>
   </div>
 </div>
@@ -251,6 +249,7 @@ let BACKEND='https://idcloak-handler-zuebeordcf.cn-hangzhou.fcapp.run';
 let state={};
 let allRecords=JSON.parse(localStorage.getItem('idcloak_records')||'[]');
 let sessions=JSON.parse(localStorage.getItem('idcloak_sessions')||'{}');
+let completedRaters=JSON.parse(localStorage.getItem('idcloak_completed')||'[]');
 
 const $=id=>document.getElementById(id);
 function toast(msg,ms=2500){const e=$('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),ms);}
@@ -271,12 +270,26 @@ async function submitRecord(rec){
 function checkResume(){
   const rater=$('rater-id').value.trim();
   const card=$('resume-card');
-  if(!rater||!sessions[rater]){card.style.display='none';return;}
-  const s=sessions[rater];
-  const t1done=s.t1idx,t1total=s.t1Queue?s.t1Queue.length:0;
-  const t2done=s.t2idx,t2total=s.t2Queue?s.t2Queue.length:0;
-  $('resume-detail').textContent=`任务1: ${t1done}/${t1total} 已完成 · 任务2: ${t2done}/${t2total} 已完成`;
-  card.style.display='block';
+  if(!rater){card.style.display='none';return;}
+  // 已完成：显示已完成提示，隐藏开始按钮
+  if(completedRaters.includes(rater)){
+    $('resume-detail').innerHTML=`<span style="color:var(--coral);font-weight:500">该 ID 已完成全部评测，无法重复参与。</span>`;
+    card.style.display='block';
+    $('start-btn').style.display='none';
+    return;
+  }
+  // 有进度：显示继续提示
+  if(sessions[rater]){
+    const s=sessions[rater];
+    const t1done=s.t1idx,t1total=s.t1Queue?s.t1Queue.length:0;
+    const t2done=s.t2idx,t2total=s.t2Queue?s.t2Queue.length:0;
+    $('resume-detail').textContent=`任务1: ${t1done}/${t1total} 已完成 · 任务2: ${t2done}/${t2total} 已完成`;
+    card.style.display='block';
+    $('start-btn').style.display='';
+    return;
+  }
+  card.style.display='none';
+  $('start-btn').style.display='';
 }
 
 // ── 开始新评测 ────────────────────────────────────────────────
@@ -284,6 +297,7 @@ function startStudy(){
   const rater=$('rater-id').value.trim();
   const doT1=true,doT2=true;
   if(!rater){toast('请填写评测者 ID');return;}
+  if(completedRaters.includes(rater)){toast('该 ID 已完成评测，无法重复参与');return;}
 
   // 所有 eta 混合，Task1 队列
   const t1Queue=[...ALL_PAIRS];
@@ -375,6 +389,10 @@ async function t2next(){
 function showDone(){
   delete sessions[state.rater];
   localStorage.setItem('idcloak_sessions',JSON.stringify(sessions));
+  if(!completedRaters.includes(state.rater)){
+    completedRaters.push(state.rater);
+    localStorage.setItem('idcloak_completed',JSON.stringify(completedRaters));
+  }
   $('done-msg').textContent=`${state.rater} 已完成全部评测：任务1 ${state.t1Queue.length} 组 + 任务2 ${state.t2Queue.length} 张`;
   showPage('pg-done');
 }

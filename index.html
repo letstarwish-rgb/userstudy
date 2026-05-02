@@ -266,19 +266,32 @@ async function submitRecord(rec){
   catch(e){console.warn('upload err:',e.message);}
 }
 
-// ── 检测进度 ──────────────────────────────────────────────────
-function checkResume(){
+// ── 检测进度（同时查询后端是否已完成）─────────────────────────
+async function checkResume(){
   const rater=$('rater-id').value.trim();
   const card=$('resume-card');
-  if(!rater){card.style.display='none';return;}
-  // 已完成：显示已完成提示，隐藏开始按钮
+  if(!rater){card.style.display='none';$('start-btn').style.display='';return;}
+
+  // 先查本地已完成列表
   if(completedRaters.includes(rater)){
-    $('resume-detail').innerHTML=`<span style="color:var(--coral);font-weight:500">该 ID 已完成全部评测，无法重复参与。</span>`;
-    card.style.display='block';
-    $('start-btn').style.display='none';
-    return;
+    showCompletedNotice(card); return;
   }
-  // 有进度：显示继续提示
+
+  // 再查后端（防止换浏览器后绕过限制）
+  try{
+    const r=await fetch(BACKEND+'/check?rater='+encodeURIComponent(rater),{signal:AbortSignal.timeout(5000)});
+    const data=await r.json();
+    if(data.completed){
+      // 同步到本地
+      if(!completedRaters.includes(rater)){
+        completedRaters.push(rater);
+        localStorage.setItem('idcloak_completed',JSON.stringify(completedRaters));
+      }
+      showCompletedNotice(card); return;
+    }
+  }catch(e){console.warn('check failed:',e.message);}
+
+  // 有本地进度
   if(sessions[rater]){
     const s=sessions[rater];
     const t1done=s.t1idx,t1total=s.t1Queue?s.t1Queue.length:0;
@@ -288,16 +301,33 @@ function checkResume(){
     $('start-btn').style.display='';
     return;
   }
+
   card.style.display='none';
   $('start-btn').style.display='';
 }
 
+function showCompletedNotice(card){
+  $('resume-detail').innerHTML='<span style="color:var(--coral);font-weight:500">该 ID 已完成全部评测，无法重复参与。</span>';
+  card.style.display='block';
+  $('start-btn').style.display='none';
+}
+
 // ── 开始新评测 ────────────────────────────────────────────────
-function startStudy(){
+async function startStudy(){
   const rater=$('rater-id').value.trim();
   const doT1=true,doT2=true;
   if(!rater){toast('请填写评测者 ID');return;}
   if(completedRaters.includes(rater)){toast('该 ID 已完成评测，无法重复参与');return;}
+  // 开始前再次查询后端，防止换浏览器绕过
+  try{
+    const r=await fetch(BACKEND+'/check?rater='+encodeURIComponent(rater),{signal:AbortSignal.timeout(5000)});
+    const data=await r.json();
+    if(data.completed){
+      if(!completedRaters.includes(rater)){completedRaters.push(rater);localStorage.setItem('idcloak_completed',JSON.stringify(completedRaters));}
+      showCompletedNotice($('resume-card'));
+      toast('该 ID 已完成评测，无法重复参与');return;
+    }
+  }catch(e){console.warn('pre-start check failed:',e.message);}
 
   // 所有 eta 混合，Task1 队列
   const t1Queue=[...ALL_PAIRS];
@@ -414,34 +444,53 @@ function calcStats(){
   });
 }
 
-function renderResults(){
-  const rows=calcStats();
+async function renderResults(){
+  $('tbl-body').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">加载中...</td></tr>';
+  $('detail-cards').innerHTML='';
+  let rows;
+  try{
+    const r=await fetch(BACKEND+'/summary',{signal:AbortSignal.timeout(15000)});
+    const data=await r.json();
+    rows=data.rows||[];
+  }catch(e){
+    $('tbl-body').innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--coral);padding:20px">加载失败: ${e.message}</td></tr>`;
+    return;
+  }
   if(!rows.length){$('tbl-body').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">暂无数据</td></tr>';$('detail-cards').innerHTML='';return;}
   $('tbl-body').innerHTML=rows.map(r=>{
-    const acc=r.acc!==null?r.acc.toFixed(4):'—',mc=r.mos_c!==null?r.mos_c.toFixed(4):'—',mk=r.mos_k!==null?r.mos_k.toFixed(4):'—';
-    const ac=r.acc!==null?(r.acc<0.55?'var(--green)':r.acc>0.7?'var(--coral)':'var(--amber)'):'inherit';
-    return`<tr><td style="font-family:monospace;font-weight:500">${r.eta}</td><td class="num" style="color:${ac};font-weight:500">${acc}</td><td class="num">${mc}</td><td class="num">${mk}</td><td class="num" style="color:var(--text3)">${r.n_raters}</td><td class="num" style="color:var(--text3)">${r.n_t1}</td></tr>`;
+    const acc=r.human_detection_accuracy!=null?r.human_detection_accuracy.toFixed(4):'—',mc=r.MOS_clean!=null?r.MOS_clean.toFixed(4):'—',mk=r.MOS_cloaked!=null?r.MOS_cloaked.toFixed(4):'—';
+    const ac=r.human_detection_accuracy!=null?(r.human_detection_accuracy<0.55?'var(--green)':r.human_detection_accuracy>0.7?'var(--coral)':'var(--amber)'):'inherit';
+    return`<tr><td style="font-family:monospace;font-weight:500">${r.eta}</td><td class="num" style="color:${ac};font-weight:500">${acc}</td><td class="num">${mc}</td><td class="num">${mk}</td><td class="num" style="color:var(--text3)">${r.n_raters}</td><td class="num" style="color:var(--text3)">${r.n_t1_trials}</td></tr>`;
   }).join('');
   $('detail-cards').innerHTML=rows.map(r=>`
     <div class="card" style="margin-top:0"><h3>η = ${r.eta} 详情</h3>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:13px;margin-top:10px">
-      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">T1 正确识别</div><strong>${r.correct}</strong> / ${r.n_t1}</div>
-      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">No difference</div><strong>${r.nodiff}</strong></div>
-      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">误识别</div><strong>${r.wrong}</strong></div>
-      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">MOS clean (n=${r.n_t2c})</div><strong>${r.mos_c!==null?r.mos_c.toFixed(2):'—'}</strong></div>
-      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">MOS cloaked (n=${r.n_t2k})</div><strong>${r.mos_k!==null?r.mos_k.toFixed(2):'—'}</strong></div>
-      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">MOS 差值</div><strong style="color:${r.mos_c!==null&&r.mos_k!==null&&(r.mos_c-r.mos_k)>0.3?'var(--coral)':'var(--green)'}">${r.mos_c!==null&&r.mos_k!==null?(r.mos_c-r.mos_k).toFixed(2):'—'}</strong></div>
+      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">T1 正确识别</div><strong>${r.t1_correct}</strong> / ${r.n_t1_trials}</div>
+      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">No difference</div><strong>${r.t1_nodiff}</strong></div>
+      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">误识别</div><strong>${r.t1_wrong}</strong></div>
+      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">MOS clean (n=${r.n_t2_clean})</div><strong>${r.MOS_clean!=null?r.MOS_clean.toFixed(2):'—'}</strong></div>
+      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">MOS cloaked (n=${r.n_t2_cloaked})</div><strong>${r.MOS_cloaked!=null?r.MOS_cloaked.toFixed(2):'—'}</strong></div>
+      <div style="background:var(--bg2);padding:10px;border-radius:var(--r)"><div style="color:var(--text3);font-size:11px;margin-bottom:3px">MOS 差值</div><strong style="color:${r.MOS_clean!=null&&r.MOS_cloaked!=null&&(r.MOS_clean-r.MOS_cloaked)>0.3?'var(--coral)':'var(--green)'}">${r.MOS_clean!=null&&r.MOS_cloaked!=null?(r.MOS_clean-r.MOS_cloaked).toFixed(2):'—'}</strong></div>
     </div></div>`).join('');
 }
 
-function exportCSV(){
-  const rows=calcStats();
-  const t10=['eta,human_detection_accuracy,MOS_clean,MOS_cloaked,n_raters,n_t1_trials',...rows.map(r=>[r.eta,r.acc??'',r.mos_c??'',r.mos_k??'',r.n_raters,r.n_t1].join(','))].join('\n');
-  const raw=['eta,rater,task,image_id,response,correct,timestamp',...allRecords.map(r=>[r.eta,r.rater,r.task,r.image_id,r.response,r.correct??'',r.timestamp].join(','))].join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('=== Table 10 ===\n'+t10+'\n\n=== Raw Records ===\n'+raw);
-  a.download='idcloak_results_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
+async function exportCSV(){
+  toast('正在从后端拉取数据...',3000);
+  try{
+    // Table 10
+    const r1=await fetch(BACKEND+'/export?format=table',{signal:AbortSignal.timeout(30000)});
+    const t10=await r1.text();
+    // Raw
+    const r2=await fetch(BACKEND+'/export?format=raw',{signal:AbortSignal.timeout(30000)});
+    const raw=await r2.text();
+    const combined='=== Table 10 ===\n'+t10+'\n\n=== Raw Records ===\n'+raw;
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(combined);
+    a.download='idcloak_results_'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click();
+  }catch(e){
+    toast('导出失败: '+e.message);
+  }
 }
 </script>
 </body>

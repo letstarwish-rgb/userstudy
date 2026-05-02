@@ -6,16 +6,7 @@
 <title>ID-Cloak Perceptual Study</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#fff;--bg2:#f5f5f3;--bg3:#eeede9;
-  --text:#1a1a18;--text2:#6b6b67;--text3:#9a9a96;
-  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
-  --blue:#185FA5;--blue-lt:#E6F1FB;--blue-dk:#0C447C;
-  --coral:#D85A30;--coral-lt:#FAECE7;--coral-dk:#712B13;
-  --green:#0F6E56;--green-lt:#E1F5EE;
-  --amber-lt:#FAEEDA;--amber:#EF9F27;
-  --r:8px;--rl:12px
-}
+:root{--bg:#fff;--bg2:#f5f5f3;--bg3:#eeede9;--text:#1a1a18;--text2:#6b6b67;--text3:#9a9a96;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);--blue:#185FA5;--blue-lt:#E6F1FB;--blue-dk:#0C447C;--coral:#D85A30;--coral-lt:#FAECE7;--coral-dk:#712B13;--green:#0F6E56;--green-lt:#E1F5EE;--amber-lt:#FAEEDA;--amber:#EF9F27;--r:8px;--rl:12px}
 @media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--text:#f0efea;--text2:#a0a09a;--text3:#6a6a64;--border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);--blue-lt:#042C53;--blue-dk:#B5D4F4;--coral-lt:#4A1B0C;--coral-dk:#F5C4B3;--green-lt:#04342C;--amber-lt:#412402}}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
 .wrap{max-width:700px;margin:0 auto;padding:24px 16px 80px}
@@ -28,6 +19,7 @@ small{font-size:12px;color:var(--text3)}
 .card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:14px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;font-size:14px;font-weight:500;transition:background .15s;font-family:inherit}
 .btn:hover{background:var(--bg2)}.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}.btn.primary:hover{background:var(--blue-dk)}
+.btn.green{background:var(--green);color:#fff;border-color:var(--green)}
 .btn.full{width:100%;padding:12px}.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}.btn.sm{padding:6px 12px;font-size:13px}
 input,select{font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%;font-family:inherit}
 label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
@@ -56,6 +48,7 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
 .tbl tr:last-child td{border-bottom:none}
 .tbl .num{text-align:right;font-family:monospace}
 .notice{font-size:12px;background:var(--blue-lt);color:var(--blue-dk);padding:8px 12px;border-radius:var(--r);margin:10px 0}
+.resume-card{background:var(--green-lt);border:0.5px solid rgba(15,110,86,0.25);border-radius:var(--rl);padding:16px 20px;margin-bottom:14px;display:none}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
 .toast.show{opacity:1}
 </style>
@@ -63,48 +56,43 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
 <body>
 <div class="wrap">
 
+<!-- ══ SETUP ══════════════════════════════════════════════════ -->
 <div id="pg-setup" class="page active">
-  <div style="margin-bottom:20px">
-    <h1>ID-Cloak Perceptual Study</h1>
-    <p>请填写信息后开始评测</p>
-  </div>
-  <div class="card">
-    <h3>后端地址（阿里云函数计算，选填）</h3>
-    <p style="margin-bottom:10px;font-size:12px">填写后数据同步上传云端，便于多人汇总。不填则仅本地保存，完成后可导出 CSV。</p>
-    <input type="text" id="backend-url" placeholder="https://xxxx.cn-hangzhou.fcapp.run" style="margin-bottom:8px">
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn sm" onclick="saveUrl()">保存</button>
-      <button class="btn sm" onclick="testUrl()">测试连接</button>
-      <span id="url-status" style="font-size:12px;color:var(--text3)"></span>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div>
+      <h1>ID-Cloak Perceptual Study</h1>
+      <p>请填写信息后开始评测</p>
     </div>
+    <button class="btn sm" onclick="showPage('pg-results');renderResults()">查看统计结果 →</button>
   </div>
+
   <div class="card">
     <h3 style="margin-bottom:10px">评测者信息</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div><label>评测者 ID</label><input type="text" id="rater-id" placeholder="e.g. rater_01"></div>
-      <div>
-        <label>η 值（本轮评测）</label>
-        <select id="eta-select">
-          <option value="">-- 选择 --</option>
-          <option value="8/255">8/255</option>
-          <option value="12/255">12/255</option>
-          <option value="16/255">16/255</option>
-        </select>
+    <label>评测者 ID</label>
+    <input type="text" id="rater-id" placeholder="e.g. rater_01" oninput="checkResume()" style="margin-bottom:12px">
+
+    <!-- 进度恢复提示 -->
+    <div class="resume-card" id="resume-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--green);margin-bottom:3px">检测到未完成的评测进度</div>
+          <div id="resume-detail" style="font-size:12px;color:var(--text2)"></div>
+        </div>
+        <button class="btn sm green" onclick="resumeStudy()">继续评测 →</button>
       </div>
     </div>
-    <div class="notice">每轮只评测一个 η 值，完成后返回选择下一个 η 继续。</div>
-    <div class="sep"></div>
-    <h3>任务选择</h3>
-    <label class="check-row"><input type="checkbox" id="t1-on" checked> 任务 1 · 识别 cloaked image（→ Human detection accuracy）</label>
-    <label class="check-row"><input type="checkbox" id="t2-on" checked> 任务 2 · 视觉质量打分 MOS（→ MOS clean / MOS cloaked）</label>
+
+    <div class="notice" style="margin-top:12px">所有 η 值（8/255、12/255、16/255）的图像混合随机排列，包含任务1和任务2，完成一次即可。</div>
   </div>
+
   <button class="btn primary full" onclick="startStudy()">开始评测 →</button>
 </div>
 
+<!-- ══ TASK 1 ══════════════════════════════════════════════════ -->
 <div id="pg-t1" class="page">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div><span class="tag tag-1" style="margin-right:6px">Task 1</span><span style="font-size:15px;font-weight:500">识别 cloaked image</span></div>
-    <div style="display:flex;gap:6px"><span class="rater-badge" id="t1-eta"></span><span class="rater-badge" id="t1-rater"></span></div>
+    <span class="rater-badge" id="t1-rater"></span>
   </div>
   <div class="progress"><div class="pf" id="t1-pf" style="width:0%"></div></div>
   <p id="t1-counter" style="font-size:12px;color:var(--text3);margin-bottom:14px"></p>
@@ -129,10 +117,11 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
   </div>
 </div>
 
+<!-- ══ TASK 2 ══════════════════════════════════════════════════ -->
 <div id="pg-t2" class="page">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div><span class="tag tag-2" style="margin-right:6px">Task 2</span><span style="font-size:15px;font-weight:500">视觉质量打分 MOS</span></div>
-    <div style="display:flex;gap:6px"><span class="rater-badge" id="t2-eta"></span><span class="rater-badge" id="t2-rater"></span></div>
+    <span class="rater-badge" id="t2-rater"></span>
   </div>
   <div class="progress"><div class="pf" id="t2-pf" style="width:0%"></div></div>
   <p id="t2-counter" style="font-size:12px;color:var(--text3);margin-bottom:14px"></p>
@@ -154,6 +143,7 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
   </div>
 </div>
 
+<!-- ══ DONE ════════════════════════════════════════════════════ -->
 <div id="pg-done" class="page">
   <div class="card" style="text-align:center;padding:40px 20px">
     <div style="font-size:48px;margin-bottom:16px">✓</div>
@@ -162,17 +152,18 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <button class="btn primary" onclick="showPage('pg-results');renderResults()">查看统计结果</button>
       <button class="btn" onclick="exportCSV()">导出结果 CSV</button>
-      <button class="btn" onclick="showPage('pg-setup')">返回（评测下一个 η）</button>
+      <button class="btn" onclick="showPage('pg-setup')">返回主页</button>
     </div>
   </div>
 </div>
 
+<!-- ══ RESULTS ════════════════════════════════════════════════ -->
 <div id="pg-results" class="page">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <h2 style="margin:0">Table 10 · 统计结果</h2>
     <div style="display:flex;gap:8px">
       <button class="btn sm primary" onclick="exportCSV()">导出 CSV</button>
-      <button class="btn sm" onclick="showPage('pg-setup')">返回</button>
+      <button class="btn sm" onclick="showPage('pg-setup')">返回主页</button>
     </div>
   </div>
   <div class="card" style="overflow-x:auto">
@@ -193,93 +184,80 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
 <div class="toast" id="toast"></div>
 
 <script>
-const ALL_PAIRS={
-"8/255":[
-{id:"img0002_0211_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0002_0211_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0002_0211_01.png"},
-{id:"img0004_0417_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0004_0417_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0004_0417_01.png"},
-{id:"img0005_0115_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0005_0115_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0005_0115_01.png"},
-{id:"img0007_0187_02",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0007_0187_02.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0007_0187_02.png"},
-{id:"img0010_0188_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0010_0188_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0010_0188_01.png"},
-{id:"img0011_0356_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0011_0356_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0011_0356_01.png"},
-{id:"img0016_0309_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0016_0309_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0016_0309_01.png"},
-{id:"img0025_0133_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0025_0133_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0025_0133_01.png"},
-{id:"img0026_0149_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0026_0149_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0026_0149_01.png"},
-{id:"img0029_0122_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0029_0122_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0029_0122_01.png"},
-{id:"img0032_0626_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0032_0626_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0032_0626_01.png"},
-{id:"img0034_0143_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0034_0143_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0034_0143_01.png"},
-{id:"img0040_0261_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0040_0261_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0040_0261_01.png"},
-{id:"img0044_0413_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0044_0413_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0044_0413_01.png"},
-{id:"img0045_0208_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0045_0208_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0045_0208_01.png"},
-{id:"img0047_0340_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0047_0340_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0047_0340_01.png"},
-{id:"img0067_0315_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0067_0315_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0067_0315_01.png"},
-{id:"img0072_0339_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0072_0339_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0072_0339_01.png"},
-{id:"img0074_0243_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0074_0243_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0074_0243_01.png"},
-{id:"img0079_0344_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0079_0344_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0079_0344_01.png"},
-],
-"12/255":[
-{id:"img0002_0211_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0002_0211_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0002_0211_01.png"},
-{id:"img0004_0417_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0004_0417_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0004_0417_01.png"},
-{id:"img0008_0210_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0008_0210_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0008_0210_01.png"},
-{id:"img0010_0188_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0010_0188_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0010_0188_01.png"},
-{id:"img0012_0386_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0012_0386_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0012_0386_01.png"},
-{id:"img0013_0017_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0013_0017_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0013_0017_01.png"},
-{id:"img0014_0141_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0014_0141_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0014_0141_01.png"},
-{id:"img0022_0180_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0022_0180_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0022_0180_01.png"},
-{id:"img0029_0122_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0029_0122_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0029_0122_01.png"},
-{id:"img0032_0626_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0032_0626_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0032_0626_01.png"},
-{id:"img0039_0207_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0039_0207_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0039_0207_01.png"},
-{id:"img0042_0225_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0042_0225_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0042_0225_01.png"},
-{id:"img0045_0208_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0045_0208_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0045_0208_01.png"},
-{id:"img0050_0094_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0050_0094_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0050_0094_01.png"},
-{id:"img0056_0419_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0056_0419_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0056_0419_01.png"},
-{id:"img0061_0143_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0061_0143_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0061_0143_01.png"},
-{id:"img0063_0363_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0063_0363_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0063_0363_01.png"},
-{id:"img0069_0104_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0069_0104_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0069_0104_01.png"},
-{id:"img0072_0339_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0072_0339_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0072_0339_01.png"},
-{id:"img0074_0243_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0074_0243_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0074_0243_01.png"},
-],
-"16/255":[
-{id:"img0001_0118_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0001_0118_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0001_0118_01.png"},
-{id:"img0010_0188_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0010_0188_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0010_0188_01.png"},
-{id:"img0011_0356_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0011_0356_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0011_0356_01.png"},
-{id:"img0013_0017_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0013_0017_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0013_0017_01.png"},
-{id:"img0020_0341_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0020_0341_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0020_0341_01.png"},
-{id:"img0030_0322_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0030_0322_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0030_0322_01.png"},
-{id:"img0032_0626_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0032_0626_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0032_0626_01.png"},
-{id:"img0035_0189_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0035_0189_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0035_0189_01.png"},
-{id:"img0037_0177_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0037_0177_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0037_0177_01.png"},
-{id:"img0040_0261_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0040_0261_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0040_0261_01.png"},
-{id:"img0043_0317_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0043_0317_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0043_0317_01.png"},
-{id:"img0045_0208_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0045_0208_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0045_0208_01.png"},
-{id:"img0054_0237_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0054_0237_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0054_0237_01.png"},
-{id:"img0056_0419_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0056_0419_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0056_0419_01.png"},
-{id:"img0058_0194_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0058_0194_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0058_0194_01.png"},
-{id:"img0063_0363_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0063_0363_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0063_0363_01.png"},
-{id:"img0065_0012_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0065_0012_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0065_0012_01.png"},
-{id:"img0066_0223_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0066_0223_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0066_0223_01.png"},
-{id:"img0076_0388_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0076_0388_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0076_0388_01.png"},
-{id:"img0078_0260_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0078_0260_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0078_0260_01.png"},
-]
-};
+const ALL_PAIRS=[
+  {eta:"8/255",id:"img0002_0211_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0002_0211_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0002_0211_01.png"},
+  {eta:"8/255",id:"img0004_0417_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0004_0417_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0004_0417_01.png"},
+  {eta:"8/255",id:"img0005_0115_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0005_0115_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0005_0115_01.png"},
+  {eta:"8/255",id:"img0007_0187_02",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0007_0187_02.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0007_0187_02.png"},
+  {eta:"8/255",id:"img0010_0188_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0010_0188_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0010_0188_01.png"},
+  {eta:"8/255",id:"img0011_0356_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0011_0356_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0011_0356_01.png"},
+  {eta:"8/255",id:"img0016_0309_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0016_0309_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0016_0309_01.png"},
+  {eta:"8/255",id:"img0025_0133_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0025_0133_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0025_0133_01.png"},
+  {eta:"8/255",id:"img0026_0149_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0026_0149_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0026_0149_01.png"},
+  {eta:"8/255",id:"img0029_0122_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0029_0122_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0029_0122_01.png"},
+  {eta:"8/255",id:"img0032_0626_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0032_0626_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0032_0626_01.png"},
+  {eta:"8/255",id:"img0034_0143_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0034_0143_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0034_0143_01.png"},
+  {eta:"8/255",id:"img0040_0261_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0040_0261_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0040_0261_01.png"},
+  {eta:"8/255",id:"img0044_0413_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0044_0413_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0044_0413_01.png"},
+  {eta:"8/255",id:"img0045_0208_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0045_0208_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0045_0208_01.png"},
+  {eta:"8/255",id:"img0047_0340_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0047_0340_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0047_0340_01.png"},
+  {eta:"8/255",id:"img0067_0315_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0067_0315_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0067_0315_01.png"},
+  {eta:"8/255",id:"img0072_0339_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0072_0339_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0072_0339_01.png"},
+  {eta:"8/255",id:"img0074_0243_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0074_0243_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0074_0243_01.png"},
+  {eta:"8/255",id:"img0079_0344_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/clean/img0079_0344_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/8_255/cloaked/img0079_0344_01.png"},
+  {eta:"12/255",id:"img0002_0211_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0002_0211_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0002_0211_01.png"},
+  {eta:"12/255",id:"img0004_0417_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0004_0417_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0004_0417_01.png"},
+  {eta:"12/255",id:"img0008_0210_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0008_0210_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0008_0210_01.png"},
+  {eta:"12/255",id:"img0010_0188_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0010_0188_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0010_0188_01.png"},
+  {eta:"12/255",id:"img0012_0386_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0012_0386_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0012_0386_01.png"},
+  {eta:"12/255",id:"img0013_0017_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0013_0017_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0013_0017_01.png"},
+  {eta:"12/255",id:"img0014_0141_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0014_0141_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0014_0141_01.png"},
+  {eta:"12/255",id:"img0022_0180_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0022_0180_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0022_0180_01.png"},
+  {eta:"12/255",id:"img0029_0122_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0029_0122_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0029_0122_01.png"},
+  {eta:"12/255",id:"img0032_0626_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0032_0626_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0032_0626_01.png"},
+  {eta:"12/255",id:"img0039_0207_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0039_0207_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0039_0207_01.png"},
+  {eta:"12/255",id:"img0042_0225_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0042_0225_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0042_0225_01.png"},
+  {eta:"12/255",id:"img0045_0208_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0045_0208_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0045_0208_01.png"},
+  {eta:"12/255",id:"img0050_0094_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0050_0094_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0050_0094_01.png"},
+  {eta:"12/255",id:"img0056_0419_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0056_0419_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0056_0419_01.png"},
+  {eta:"12/255",id:"img0061_0143_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0061_0143_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0061_0143_01.png"},
+  {eta:"12/255",id:"img0063_0363_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0063_0363_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0063_0363_01.png"},
+  {eta:"12/255",id:"img0069_0104_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0069_0104_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0069_0104_01.png"},
+  {eta:"12/255",id:"img0072_0339_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0072_0339_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0072_0339_01.png"},
+  {eta:"12/255",id:"img0074_0243_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/clean/img0074_0243_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/12_255/cloaked/img0074_0243_01.png"},
+  {eta:"16/255",id:"img0001_0118_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0001_0118_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0001_0118_01.png"},
+  {eta:"16/255",id:"img0010_0188_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0010_0188_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0010_0188_01.png"},
+  {eta:"16/255",id:"img0011_0356_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0011_0356_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0011_0356_01.png"},
+  {eta:"16/255",id:"img0013_0017_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0013_0017_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0013_0017_01.png"},
+  {eta:"16/255",id:"img0020_0341_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0020_0341_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0020_0341_01.png"},
+  {eta:"16/255",id:"img0030_0322_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0030_0322_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0030_0322_01.png"},
+  {eta:"16/255",id:"img0032_0626_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0032_0626_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0032_0626_01.png"},
+  {eta:"16/255",id:"img0035_0189_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0035_0189_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0035_0189_01.png"},
+  {eta:"16/255",id:"img0037_0177_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0037_0177_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0037_0177_01.png"},
+  {eta:"16/255",id:"img0040_0261_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0040_0261_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0040_0261_01.png"},
+  {eta:"16/255",id:"img0043_0317_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0043_0317_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0043_0317_01.png"},
+  {eta:"16/255",id:"img0045_0208_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0045_0208_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0045_0208_01.png"},
+  {eta:"16/255",id:"img0054_0237_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0054_0237_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0054_0237_01.png"},
+  {eta:"16/255",id:"img0056_0419_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0056_0419_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0056_0419_01.png"},
+  {eta:"16/255",id:"img0058_0194_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0058_0194_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0058_0194_01.png"},
+  {eta:"16/255",id:"img0063_0363_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0063_0363_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0063_0363_01.png"},
+  {eta:"16/255",id:"img0065_0012_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0065_0012_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0065_0012_01.png"},
+  {eta:"16/255",id:"img0066_0223_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0066_0223_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0066_0223_01.png"},
+  {eta:"16/255",id:"img0076_0388_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0076_0388_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0076_0388_01.png"},
+  {eta:"16/255",id:"img0078_0260_01",clean:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/clean/img0078_0260_01.png",cloaked:"https://idcloak.oss-cn-hangzhou.aliyuncs.com/images/16_255/cloaked/img0078_0260_01.png"},
+];
 
-let BACKEND=localStorage.getItem('idcloak_backend')||'';
+let BACKEND='https://idcloak-handler-zuebeordcf.cn-hangzhou.fcapp.run';
 let state={};
 let allRecords=JSON.parse(localStorage.getItem('idcloak_records')||'[]');
+let sessions=JSON.parse(localStorage.getItem('idcloak_sessions')||'{}');
 
 const $=id=>document.getElementById(id);
 function toast(msg,ms=2500){const e=$('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),ms);}
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0);}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
 
-function saveUrl(){const u=$('backend-url').value.trim().replace(/\/$/,'');if(!u){toast('请填写 URL');return;}BACKEND=u;localStorage.setItem('idcloak_backend',u);toast('已保存');}
-async function testUrl(){
-  const u=$('backend-url').value.trim().replace(/\/$/,'')||BACKEND;
-  if(!u){toast('请先填写 URL');return;}
-  $('url-status').textContent='连接中...';
-  try{const r=await fetch(u+'/summary',{signal:AbortSignal.timeout(8000)});if(r.ok){$('url-status').textContent='✓ 连接成功';$('url-status').style.color='var(--green)';}else throw new Error('HTTP '+r.status);}
-  catch(e){$('url-status').textContent='✗ '+e.message;$('url-status').style.color='var(--coral)';}
-}
-window.addEventListener('DOMContentLoaded',()=>{if(BACKEND)$('backend-url').value=BACKEND;});
+
 
 async function submitRecord(rec){
   allRecords.push(rec);
@@ -289,49 +267,94 @@ async function submitRecord(rec){
   catch(e){console.warn('upload err:',e.message);}
 }
 
-function startStudy(){
-  const rater=$('rater-id').value.trim(),eta=$('eta-select').value;
-  const doT1=$('t1-on').checked,doT2=$('t2-on').checked;
-  if(!rater){toast('请填写评测者 ID');return;}
-  if(!eta){toast('请选择 η 值');return;}
-  if(!doT1&&!doT2){toast('请至少选择一个任务');return;}
-  const etaPairs=[...ALL_PAIRS[eta]];shuffle(etaPairs);
-  const t2items=[];
-  etaPairs.forEach(p=>{t2items.push({img_id:p.id,url:p.clean,type:'clean',eta});t2items.push({img_id:p.id,url:p.cloaked,type:'cloaked',eta});});
-  shuffle(t2items);
-  state={rater,eta,doT1,doT2,t1idx:0,t2idx:0,t1sel:null,t2rating:null,etaPairs,t2items};
-  if(doT1)initT1();else initT2();
+// ── 检测进度 ──────────────────────────────────────────────────
+function checkResume(){
+  const rater=$('rater-id').value.trim();
+  const card=$('resume-card');
+  if(!rater||!sessions[rater]){card.style.display='none';return;}
+  const s=sessions[rater];
+  const t1done=s.t1idx,t1total=s.t1Queue?s.t1Queue.length:0;
+  const t2done=s.t2idx,t2total=s.t2Queue?s.t2Queue.length:0;
+  $('resume-detail').textContent=`任务1: ${t1done}/${t1total} 已完成 · 任务2: ${t2done}/${t2total} 已完成`;
+  card.style.display='block';
 }
 
-function initT1(){$('t1-rater').textContent='👤 '+state.rater;$('t1-eta').textContent='η = '+state.eta;loadT1Pair();showPage('pg-t1');}
+// ── 开始新评测 ────────────────────────────────────────────────
+function startStudy(){
+  const rater=$('rater-id').value.trim();
+  const doT1=true,doT2=true;
+  if(!rater){toast('请填写评测者 ID');return;}
+
+  // 所有 eta 混合，Task1 队列
+  const t1Queue=[...ALL_PAIRS];
+  shuffle(t1Queue);
+
+  // Task2：每张图 clean+cloaked 全混合
+  const t2Queue=[];
+  ALL_PAIRS.forEach(p=>{
+    t2Queue.push({eta:p.eta,img_id:p.id,url:p.clean,type:'clean'});
+    t2Queue.push({eta:p.eta,img_id:p.id,url:p.cloaked,type:'cloaked'});
+  });
+  shuffle(t2Queue);
+
+  const session={rater,doT1,doT2,t1Queue,t2Queue,t1idx:0,t2idx:0};
+  sessions[rater]=session;
+  localStorage.setItem('idcloak_sessions',JSON.stringify(sessions));
+  loadSession(rater);
+}
+
+// ── 继续进度 ──────────────────────────────────────────────────
+function resumeStudy(){
+  const rater=$('rater-id').value.trim();
+  if(!rater||!sessions[rater]){toast('未找到进度');return;}
+  loadSession(rater);
+}
+
+function loadSession(rater){
+  state={...sessions[rater]};
+  $('resume-card').style.display='none';
+  if(state.doT1&&state.t1idx<state.t1Queue.length)initT1();
+  else if(state.doT2&&state.t2idx<state.t2Queue.length)initT2();
+  else showDone();
+}
+
+function saveProgress(){
+  sessions[state.rater]={...state};
+  localStorage.setItem('idcloak_sessions',JSON.stringify(sessions));
+}
+
+// ── Task 1 ────────────────────────────────────────────────────
+function initT1(){$('t1-rater').textContent='👤 '+state.rater;loadT1Pair();showPage('pg-t1');}
 function loadT1Pair(){
-  const p=state.etaPairs[state.t1idx],total=state.etaPairs.length,i=state.t1idx;
+  const p=state.t1Queue[state.t1idx],total=state.t1Queue.length,i=state.t1idx;
   $('t1-pf').style.width=Math.round(i/total*100)+'%';
-  $('t1-counter').textContent=`第 ${i+1} / ${total} 组`;
+  $('t1-counter').textContent=`第 ${i+1} / ${total} 组 · η = ${p.eta}`;
   const flip=Math.random()<0.5;state.t1flip=flip;
-  $('img-left').src=flip?p.cloaked:p.clean;$('img-right').src=flip?p.clean:p.cloaked;
+  $('img-left').src=flip?p.cloaked:p.clean;
+  $('img-right').src=flip?p.clean:p.cloaked;
   ['btn-left','btn-right','btn-nodiff'].forEach(id=>$(id).classList.remove('sel'));
   state.t1sel=null;$('t1-next').disabled=true;$('t1-status').textContent='';
 }
 function t1pick(c){state.t1sel=c;['btn-left','btn-right','btn-nodiff'].forEach(id=>$(id).classList.remove('sel'));$('btn-'+c).classList.add('sel');$('t1-next').disabled=false;}
 async function t1next(){
   if(!state.t1sel)return;$('t1-next').disabled=true;
-  const p=state.etaPairs[state.t1idx];
+  const p=state.t1Queue[state.t1idx];
   const cloakedSide=state.t1flip?'left':'right';
   const correct=state.t1sel!=='nodiff'&&state.t1sel===cloakedSide;
   $('t1-status').textContent='保存...';
-  await submitRecord({rater:state.rater,eta:state.eta,task:'task1',image_id:p.id,response:state.t1sel,correct,timestamp:new Date().toISOString()});
+  await submitRecord({rater:state.rater,eta:p.eta,task:'task1',image_id:p.id,response:state.t1sel,correct,timestamp:new Date().toISOString()});
   $('t1-status').textContent='✓';
-  state.t1idx++;
-  if(state.t1idx<state.etaPairs.length)loadT1Pair();
-  else{$('t1-pf').style.width='100%';if(state.doT2)initT2();else showDone();}
+  state.t1idx++;saveProgress();
+  if(state.t1idx<state.t1Queue.length)loadT1Pair();
+  else{$('t1-pf').style.width='100%';if(state.doT2&&state.t2idx<state.t2Queue.length)initT2();else showDone();}
 }
 
-function initT2(){$('t2-rater').textContent='👤 '+state.rater;$('t2-eta').textContent='η = '+state.eta;loadT2Item();showPage('pg-t2');}
+// ── Task 2 ────────────────────────────────────────────────────
+function initT2(){$('t2-rater').textContent='👤 '+state.rater;loadT2Item();showPage('pg-t2');}
 function loadT2Item(){
-  const item=state.t2items[state.t2idx],total=state.t2items.length,i=state.t2idx;
+  const item=state.t2Queue[state.t2idx],total=state.t2Queue.length,i=state.t2idx;
   $('t2-pf').style.width=Math.round(i/total*100)+'%';
-  $('t2-counter').textContent=`第 ${i+1} / ${total} 张（顺序随机，盲测）`;
+  $('t2-counter').textContent=`第 ${i+1} / ${total} 张（混合随机，盲测）`;
   $('t2-img').src=item.url;
   [1,2,3,4,5].forEach(n=>$('r'+n).classList.remove('on'));
   $('t2-next').disabled=true;state.t2rating=null;$('t2-status').textContent='';
@@ -339,20 +362,24 @@ function loadT2Item(){
 function t2rate(n){state.t2rating=n;[1,2,3,4,5].forEach(i=>$('r'+i).classList.toggle('on',i<=n));$('t2-next').disabled=false;}
 async function t2next(){
   if(!state.t2rating)return;$('t2-next').disabled=true;
-  const item=state.t2items[state.t2idx];
+  const item=state.t2Queue[state.t2idx];
   $('t2-status').textContent='保存...';
-  await submitRecord({rater:state.rater,eta:state.eta,task:'task2_'+item.type,image_id:item.img_id,response:state.t2rating,timestamp:new Date().toISOString()});
+  await submitRecord({rater:state.rater,eta:item.eta,task:'task2_'+item.type,image_id:item.img_id,response:state.t2rating,timestamp:new Date().toISOString()});
   $('t2-status').textContent='✓';
-  state.t2idx++;
-  if(state.t2idx<state.t2items.length)loadT2Item();
+  state.t2idx++;saveProgress();
+  if(state.t2idx<state.t2Queue.length)loadT2Item();
   else{$('t2-pf').style.width='100%';showDone();}
 }
 
+// ── Done ──────────────────────────────────────────────────────
 function showDone(){
-  $('done-msg').textContent=`${state.rater} · η=${state.eta} · 任务1: ${state.doT1?state.etaPairs.length:0} 组，任务2: ${state.doT2?state.t2items.length:0} 张`;
+  delete sessions[state.rater];
+  localStorage.setItem('idcloak_sessions',JSON.stringify(sessions));
+  $('done-msg').textContent=`${state.rater} 已完成全部评测：任务1 ${state.t1Queue.length} 组 + 任务2 ${state.t2Queue.length} 张`;
   showPage('pg-done');
 }
 
+// ── 统计 ──────────────────────────────────────────────────────
 function calcStats(){
   const byEta={};
   allRecords.forEach(r=>{
@@ -365,8 +392,7 @@ function calcStats(){
   const avg=arr=>arr.length?+(arr.reduce((s,r)=>s+Number(r.response),0)/arr.length).toFixed(4):null;
   return Object.entries(byEta).sort((a,b)=>parseFloat(a[0])-parseFloat(b[0])).map(([eta,d])=>{
     const t1n=d.t1.length,correct=d.t1.filter(r=>r.correct===true||r.correct===1).length,nodiff=d.t1.filter(r=>r.response==='nodiff').length;
-    return{eta,acc:t1n>0?+(correct/t1n).toFixed(4):null,mos_c:avg(d.t2c),mos_k:avg(d.t2k),
-      n_raters:d.raters.size,n_t1:t1n,correct,nodiff,wrong:t1n-correct-nodiff,n_t2c:d.t2c.length,n_t2k:d.t2k.length};
+    return{eta,acc:t1n>0?+(correct/t1n).toFixed(4):null,mos_c:avg(d.t2c),mos_k:avg(d.t2k),n_raters:d.raters.size,n_t1:t1n,correct,nodiff,wrong:t1n-correct-nodiff,n_t2c:d.t2c.length,n_t2k:d.t2k.length};
   });
 }
 
@@ -392,10 +418,8 @@ function renderResults(){
 
 function exportCSV(){
   const rows=calcStats();
-  const t10=['eta,human_detection_accuracy,MOS_clean,MOS_cloaked,n_raters,n_t1_trials',
-    ...rows.map(r=>[r.eta,r.acc??'',r.mos_c??'',r.mos_k??'',r.n_raters,r.n_t1].join(','))].join('\n');
-  const raw=['eta,rater,task,image_id,response,correct,timestamp',
-    ...allRecords.map(r=>[r.eta,r.rater,r.task,r.image_id,r.response,r.correct??'',r.timestamp].join(','))].join('\n');
+  const t10=['eta,human_detection_accuracy,MOS_clean,MOS_cloaked,n_raters,n_t1_trials',...rows.map(r=>[r.eta,r.acc??'',r.mos_c??'',r.mos_k??'',r.n_raters,r.n_t1].join(','))].join('\n');
+  const raw=['eta,rater,task,image_id,response,correct,timestamp',...allRecords.map(r=>[r.eta,r.rater,r.task,r.image_id,r.response,r.correct??'',r.timestamp].join(','))].join('\n');
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('=== Table 10 ===\n'+t10+'\n\n=== Raw Records ===\n'+raw);
   a.download='idcloak_results_'+new Date().toISOString().slice(0,10)+'.csv';

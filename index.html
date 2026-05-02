@@ -291,15 +291,31 @@ async function checkResume(){
     }
   }catch(e){console.warn('check failed:',e.message);}
 
-  // 有本地进度
-  if(sessions[rater]){
-    const s=sessions[rater];
-    const t1done=s.t1idx,t1total=s.t1Queue?s.t1Queue.length:0;
-    const t2done=s.t2idx,t2total=s.t2Queue?s.t2Queue.length:0;
-    $('resume-detail').textContent=`任务1: ${t1done}/${t1total} 已完成 · 任务2: ${t2done}/${t2total} 已完成`;
-    card.style.display='block';
-    $('start-btn').style.display='';
-    return;
+  // 查后端是否有进度
+  try{
+    const r=await fetch(BACKEND+'/session?rater='+encodeURIComponent(rater),{signal:AbortSignal.timeout(5000)});
+    const data=await r.json();
+    if(data.found&&data.session){
+      const s=data.session;
+      sessions[rater]=s; // 同步到本地
+      const t1done=s.t1idx,t1total=s.t1Queue?s.t1Queue.length:0;
+      const t2done=s.t2idx,t2total=s.t2Queue?s.t2Queue.length:0;
+      $('resume-detail').textContent=`任务1: ${t1done}/${t1total} 已完成 · 任务2: ${t2done}/${t2total} 已完成`;
+      card.style.display='block';
+      $('start-btn').style.display='';
+      return;
+    }
+  }catch(e){
+    // 后端查不到时退回本地进度
+    if(sessions[rater]){
+      const s=sessions[rater];
+      const t1done=s.t1idx,t1total=s.t1Queue?s.t1Queue.length:0;
+      const t2done=s.t2idx,t2total=s.t2Queue?s.t2Queue.length:0;
+      $('resume-detail').textContent=`任务1: ${t1done}/${t1total} 已完成 · 任务2: ${t2done}/${t2total} 已完成`;
+      card.style.display='block';
+      $('start-btn').style.display='';
+      return;
+    }
   }
 
   card.style.display='none';
@@ -348,9 +364,19 @@ async function startStudy(){
 }
 
 // ── 继续进度 ──────────────────────────────────────────────────
-function resumeStudy(){
+async function resumeStudy(){
   const rater=$('rater-id').value.trim();
-  if(!rater||!sessions[rater]){toast('未找到进度');return;}
+  if(!rater){toast('请先填写评测者 ID');return;}
+  // 优先从后端拉最新进度
+  try{
+    const r=await fetch(BACKEND+'/session?rater='+encodeURIComponent(rater),{signal:AbortSignal.timeout(5000)});
+    const data=await r.json();
+    if(data.found&&data.session){
+      sessions[rater]=data.session;
+      localStorage.setItem('idcloak_sessions',JSON.stringify(sessions));
+    }
+  }catch(e){console.warn('session fetch failed:',e.message);}
+  if(!sessions[rater]){toast('未找到进度，请开始新的评测');return;}
   loadSession(rater);
 }
 
@@ -363,8 +389,16 @@ function loadSession(rater){
 }
 
 function saveProgress(){
-  sessions[state.rater]={...state};
+  const session={...state};
+  sessions[state.rater]=session;
   localStorage.setItem('idcloak_sessions',JSON.stringify(sessions));
+  // 异步保存到后端（不阻塞评测流程）
+  fetch(BACKEND+'/session',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(session),
+    signal:AbortSignal.timeout(8000),
+  }).catch(e=>console.warn('session save failed:',e.message));
 }
 
 // ── Task 1 ────────────────────────────────────────────────────
@@ -417,13 +451,21 @@ async function t2next(){
 
 // ── Done ──────────────────────────────────────────────────────
 function showDone(){
-  delete sessions[state.rater];
+  const rater=state.rater;
+  delete sessions[rater];
   localStorage.setItem('idcloak_sessions',JSON.stringify(sessions));
-  if(!completedRaters.includes(state.rater)){
-    completedRaters.push(state.rater);
+  if(!completedRaters.includes(rater)){
+    completedRaters.push(rater);
     localStorage.setItem('idcloak_completed',JSON.stringify(completedRaters));
   }
-  $('done-msg').textContent=`${state.rater} 已完成全部评测：任务1 ${state.t1Queue.length} 组 + 任务2 ${state.t2Queue.length} 张`;
+  // 删除后端进度文件
+  fetch(BACKEND+'/session/delete',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({rater}),
+    signal:AbortSignal.timeout(8000),
+  }).catch(e=>console.warn('session delete failed:',e.message));
+  $('done-msg').textContent=`${rater} 已完成全部评测：任务1 ${state.t1Queue.length} 组 + 任务2 ${state.t2Queue.length} 张`;
   showPage('pg-done');
 }
 
